@@ -1,0 +1,6 @@
+interface:
+  display_name: "Grill Me"
+  short_description: "Interview a plan or design until the key decisions are resolved."
+  default_prompt: "Use the grill-me skill to interview me about this plan or design."
+policy:
+  allow_implicit_invocation: false
