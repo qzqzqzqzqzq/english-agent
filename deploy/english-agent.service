@@ -1,0 +1,13 @@
+[Unit]
+Description=English Agent local backend
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/english-agent
+ExecStart=/usr/bin/env bash %h/english-agent/scripts/linux-server.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -1,6 +1,6 @@
 import {test,after} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,rmSync} from 'node:fs';
+import {mkdtempSync,rmSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 const dir=mkdtempSync(join(tmpdir(),'english-agent-http-'));
@@ -43,4 +43,19 @@ test('end-to-end conversation settings, correction card, selection, grammar isol
   assert.deepEqual(call.input.slice(0,native.length),native);
   assert.equal(store.messages(b.id).length,6);assert.equal(store.messages(a.id).length,2);
   assert.ok(upstream.some(x=>x.path==='/v1/responses/compact'));
+});
+test('server access password protects pages and API without exposing the secret',async()=>{
+  const file=join(dir,'access-password');writeFileSync(file,'fixture-access-password-32-characters');
+  process.env.ACCESS_PASSWORD_FILE=file;
+  const guarded=createApp().listen(0,'127.0.0.1');
+  delete process.env.ACCESS_PASSWORD_FILE;
+  await new Promise<void>(resolve=>guarded.once('listening',resolve));
+  const url=`http://127.0.0.1:${(guarded.address() as any).port}`;
+  try {
+    const unauth=await originalFetch(url+'/');assert.equal(unauth.status,401);
+    assert.match(unauth.headers.get('www-authenticate')||'',/English Agent/);
+    const wrong=await originalFetch(url+'/api/settings',{headers:{Authorization:'Basic '+Buffer.from('english:wrong').toString('base64')}});assert.equal(wrong.status,401);
+    const valid=await originalFetch(url+'/api/settings',{headers:{Authorization:'Basic '+Buffer.from('english:fixture-access-password-32-characters').toString('base64')}});
+    assert.equal(valid.status,200);assert.doesNotMatch(await valid.text(),/fixture-access-password/);
+  } finally {await new Promise<void>(resolve=>guarded.close(()=>resolve()));}
 });

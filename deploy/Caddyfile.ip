@@ -1,0 +1,5 @@
+https://192.0.2.10 {
+    tls internal
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:3001
+}

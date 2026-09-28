@@ -20,6 +20,10 @@ npm start
 
 打开 `http://127.0.0.1:3001`。两种服务都只监听 `127.0.0.1`。运行 `npm test` 执行使用 mock 服务的测试。可用 `PORT`、`DATA_DIR`、`COMPACT_THRESHOLD_TOKENS` 环境变量调整后端端口、数据目录和压缩阈值；示例见 `.env.example`。该项目不自动加载 `.env`，需由 shell 或进程管理器设置环境变量。
 
+### Linux 服务器分支
+
+在 Linux 服务器上，克隆 `linux` 分支并运行 `npm run linux`。首次运行生成网页访问密码并存入本机私有文件；后端只监听 `127.0.0.1`。要通过其他设备的域名或 IP 访问，用 Caddy 提供 HTTPS 并反向代理到后端。此入口默认把数据库和登录密码放在 `${XDG_DATA_HOME:-$HOME/.local/share}/english-agent/`；详见 [Linux 服务器部署](docs/LINUX.md)。当前临时执行环境不能提供外部可访问地址。
+
 ## 首次设置和使用
 
 在“模型设置”分别保存主模型和辅助模型的 Base URL、Model ID、API Key。Base URL 可填服务根地址或带 `/v1` 的地址，程序拼接 `/v1/responses` 和 `/v1/responses/compact`。两套配置可指向同一服务。“测试连接”对辅助模型调用 Responses；对主模型依次调用 Responses 和原生 compact，可能产生少量服务用量。保存后只返回是否有 Key，不返回明文；留空新 Key 会保留旧 Key，也可勾选清除。

@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { extname, resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Store } from './db.js';
@@ -112,8 +113,25 @@ async function route(req:IncomingMessage,res:ServerResponse,url:URL) {
   }
   return send(res,404,{error:'页面或 API 不存在。',code:'not_found'});
 }
-export function createApp() {return createServer(async(req,res)=>{
+function accessPassword():string|undefined {
+  const file=process.env.ACCESS_PASSWORD_FILE;
+  if(!file)return undefined;
+  const password=readFileSync(file,'utf8').trim();
+  if(password.length<16)throw new Error('Access password must contain at least 16 characters.');
+  return password;
+}
+export function isAuthorized(header:string|undefined,password:string|undefined):boolean {
+  if(!password)return true;
+  if(!header?.startsWith('Basic '))return false;
+  const raw=Buffer.from(header.slice(6),'base64').toString('utf8');
+  const separator=raw.indexOf(':');
+  if(separator<0||raw.slice(0,separator)!=='english')return false;
+  const digest=(value:string)=>createHash('sha256').update(value).digest();
+  return timingSafeEqual(digest(raw.slice(separator+1)),digest(password));
+}
+export function createApp() {const password=accessPassword();return createServer(async(req,res)=>{
   try {
+    if(!isAuthorized(req.headers.authorization,password)) {res.writeHead(401,{'WWW-Authenticate':'Basic realm="English Agent", charset="UTF-8"','Cache-Control':'no-store'});res.end('Authentication required');return;}
     const url=new URL(req.url||'/',`http://${req.headers.host||'127.0.0.1'}`);
     if(url.pathname.startsWith('/api/'))return await route(req,res,url);
     const name=url.pathname==='/'?'index.html':url.pathname.slice(1);
